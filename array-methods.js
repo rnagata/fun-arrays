@@ -5,11 +5,23 @@ var dataset = require('./dataset.json');
   greater than 100000
   assign the resulting new array to `hundredThousandairs`
 */
-var hundredThousandairs = null;
+
+const dataArray = dataset.bankBalances;
+
+var hundredThousandairs = dataArray.filter(
+  function(element){
+    if ((element.amount) > 100000){
+      return true;
+    } 
+});
 
 // set sumOfBankBalances to be the sum of all value held at `amount` for each bank object
-var sumOfBankBalances = null;
 
+var sumOfBankBalances = dataArray.reduce(function(total, currentValue){
+  return total += parseInt(currentValue.amount);
+}, 0);
+
+//console.log(dataArray);
 /*
   from each of the following states:
     Wisconsin
@@ -21,7 +33,22 @@ var sumOfBankBalances = null;
   take each `amount` and add 18.9% interest to it rounded to the nearest dollar 
   and then sum it all up into one value saved to `sumOfInterests`
  */
-var sumOfInterests = null;
+
+var sumOfInterests = dataArray.filter(
+  function(element){
+    if (element.state === "WI" || element.state === "IL" || element.state === "WY" ||
+        element.state === "OH" || element.state === "GA" || element.state === "DE"){
+      return true;
+    } 
+}).map(
+  function(element){
+    return Math.round(element.amount * .189);
+  }
+).reduce(
+  function(total, currentValue){
+    return total += currentValue;
+  }, 0
+);
 
 /*
   aggregate the sum of bankBalance amounts
@@ -39,7 +66,22 @@ var sumOfInterests = null;
     round this number to the nearest dollar before moving on.
   )
  */
-var stateSums = null;
+
+var stateSums = {};
+
+dataArray.forEach(
+  function(i){
+    if (stateSums.hasOwnProperty(i.state)){
+      stateSums[i.state] += parseFloat(i.amount);
+      return;
+    }
+    Object.defineProperty(stateSums, i.state, {
+      value : parseFloat(i.amount),
+      enumerable : true, 
+      writable : true,
+    });
+  }
+);
 
 /*
   for all states *NOT* in the following states:
@@ -58,20 +100,119 @@ var stateSums = null;
     round this number to the nearest dollar before moving on.
   )
  */
-var sumOfHighInterests = null;
+var sumOfHighInterests = 0;
+
+let stateSum = [];
+
+dataArray.filter(
+  function(element){
+
+    if (element.state === "WI" || element.state === "IL" || element.state === "WY" ||
+    element.state === "OH" || element.state === "GA" || element.state === "DE"){
+      return false;
+    }
+    return true;
+
+  }
+).forEach(
+  function (dataElement){
+
+    let index = stateSum.findIndex(
+      function(stateSumElement){
+        return stateSumElement.state === dataElement.state;
+      }
+    );
+
+    if (index === -1){
+      stateSum.push({
+        amount : parseFloat(dataElement.amount),
+        state : dataElement.state,
+      })
+      return;
+    }
+
+    stateSum[index].amount += parseFloat(dataElement.amount);
+  }
+)
+
+stateSum.forEach(
+  function (element){
+    element.amount = Math.round(element.amount * .189);
+  }
+);
+
+stateSum.forEach(
+  function (element){
+    if (element.amount > 50000){
+      sumOfHighInterests += element.amount;
+    }
+  }
+);
 
 /*
   set `lowerSumStates` to be an array of two letter state
   abbreviations of each state where the sum of amounts
   in the state is less than 1,000,000
  */
-var lowerSumStates = null;
+
+function sumStates(incomingArr){
+
+  returnArr = [];
+  
+  incomingArr.forEach( function (incomingElement)
+  {
+    let index = returnArr.findIndex( function (returnElement){
+      return returnElement.state === incomingElement.state;
+    });
+
+    if (index === -1){
+      returnArr.push({
+        amount : parseFloat(incomingElement.amount),
+        state : incomingElement.state
+      })
+      return;
+    }
+
+    returnArr[index].amount += parseFloat(incomingElement.amount);
+  });
+
+  return returnArr;
+}
+
+function lessOrGreaterThan(op, incomingArr){
+  
+  return incomingArr.filter(
+    function(element){
+      if (op === '<'){
+        return element.amount < 1000000;
+      }
+      if (op === '>'){
+        return element.amount > 1000000;
+      }
+    }
+  ); 
+}
+
+var lowerSumStates = sumStates(dataArray);
+lowerSumStates = lessOrGreaterThan('<', lowerSumStates);
+lowerSumStates = lowerSumStates.map(
+  function (element){
+    return element.state;
+  }
+);
 
 /*
   aggregate the sum of each state into one hash table
   `higherStateSums` should be the sum of all states with totals greater than 1,000,000
  */
-var higherStateSums = null;
+
+var higherStateSums = sumStates(dataArray);
+higherStateSums = lessOrGreaterThan('>', higherStateSums);
+higherStateSums = higherStateSums.reduce(
+  function(total, element){
+    return total += element.amount;
+  }, 0
+)
 
 /*
   from each of the following states:
@@ -88,7 +229,26 @@ var higherStateSums = null;
   if true set `areStatesInHigherStateSum` to `true`
   otherwise set it to `false`
  */
-var areStatesInHigherStateSum = null;
+
+var areStatesInHigherStateSum = dataArray.filter(
+  function(element){
+    if (element.state === "WI" || element.state === "IL" || element.state === "WY" ||
+        element.state === "OH" || element.state === "GA" || element.state === "DE"){
+      return true;
+    }
+  }
+);
+areStatesInHigherStateSum = sumStates(areStatesInHigherStateSum);
+
+let temp = allElementsGreaterThan(areStatesInHigherStateSum);
+areStatesInHigherStateSum = temp;
+console.log(temp);
+function allElementsGreaterThan(arr){
+  return arr.every(function(element){
+    return element.amount > 2550000;
+  });
+}
+
 
 /*
   Stretch Goal && Final Boss
